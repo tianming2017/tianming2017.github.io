@@ -332,7 +332,7 @@
 
     <script>
       // 基准日期和班次(存储在localStorage中)
-      let baseDate = new Date('2025-05-28');
+      let baseDate = new Date(2025, 4, 28); // 2025-05-28 不使用字符串形式，因为会被解析成UTC
       let baseDayType = '晚班';
       let currentMonth = new Date().getMonth();
       let currentYear = new Date().getFullYear();
@@ -345,7 +345,8 @@
 
         if (savedBaseDate) {
           baseDate = new Date(savedBaseDate);
-          document.getElementById('newBaseDate').valueAsDate = baseDate;
+          // valueAsDate 是 UTC
+          document.getElementById('newBaseDate').value = formatDate(baseDate);
         }
 
         if (savedBaseDayType) {
@@ -357,9 +358,10 @@
 
         // 设置默认查询日期为今天
         const today = new Date();
-        document.getElementById('startDate').valueAsDate = today;
-        document.getElementById('newBaseDate').valueAsDate = today;
-        document.getElementById('jumpToDate').valueAsDate = today;
+        let todayStr = formatDate(today);
+        document.getElementById('startDate').value = todayStr;
+        document.getElementById('newBaseDate').value = todayStr;
+        document.getElementById('jumpToDate').value = todayStr;
 
         // 初始化日历
         renderCalendar(currentMonth, currentYear);
@@ -470,10 +472,7 @@
         currentYear = year;
 
         renderCalendar(month, year);
-
-        let tmpDate = new Date(year, month, day);
-        tmpDate.setDate(tmpDate.getDate() + 1);
-        document.getElementById('jumpToDate').valueAsDate = tmpDate; // bug ?
+        document.getElementById('jumpToDate').value = formatDate(selectedDate);
       }
 
       // 比较两个日期是否相同（忽略时间）
@@ -522,7 +521,7 @@
         const jumpInput = document.getElementById('jumpToDate').value;
         if (!jumpInput) return;
 
-        const date = new Date(jumpInput);
+        const date = createLocalDate(jumpInput);
         selectDate(date.getDate(), date.getMonth(), date.getFullYear());
 
         // // 如果需要切换到不同的月份
@@ -554,7 +553,7 @@
         const newDayTypeInput = document.getElementById('newBaseDayType');
 
         if (newDateInput.value) {
-          baseDate = new Date(newDateInput.value);
+          baseDate = createLocalDate(newDateInput.value);
           baseDayType = newDayTypeInput.value;
 
           // 保存到localStorage
@@ -582,7 +581,8 @@
           return;
         }
 
-        let startDate = new Date(startDateInput.value);
+        let startDate = createLocalDate(startDateInput.value);
+
         let tableHTML = `
                 <table class="schedule-table">
                     <thead>
@@ -696,6 +696,12 @@
               return '未知';
           }
         }
+      }
+
+      // 用户输入 yyyy-mm-dd，解析成本地时间
+      function createLocalDate(yyyy_mm_dd) {
+        const [y, m, d] = yyyy_mm_dd.split('-').map(Number);
+        return new Date(y, m - 1, d); // 本地时间
       }
 
       // 辅助函数：格式化日期为YYYY-MM-DD
