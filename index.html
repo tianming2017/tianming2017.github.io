@@ -7,7 +7,7 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        max-width: 600px;
+        max-width: 800px;
         margin: 0 auto;
         padding: 20px;
         text-align: center;
@@ -21,7 +21,8 @@
         padding: 20px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
-      input {
+      input,
+      select {
         padding: 10px;
         font-size: 16px;
         border: 1px solid #ddd;
@@ -36,6 +37,7 @@
         border-radius: 4px;
         cursor: pointer;
         font-size: 16px;
+        margin: 5px;
       }
       button:hover {
         background-color: #45a049;
@@ -48,16 +50,16 @@
         border-radius: 5px;
       }
       .day-white {
-        background-color: #ffeb3b;
-        color: #000;
+        background-color: #87cefa;
+        color: black;
       }
       .day-night {
-        background-color: #2196f3;
+        background-color: #282846;
         color: white;
       }
       .day-off {
-        background-color: #4caf50;
-        color: white;
+        background-color: #90ee90;
+        color: black;
       }
       .settings {
         margin: 20px 0;
@@ -66,8 +68,156 @@
         border-radius: 5px;
         text-align: left;
       }
-      .update {
+      .schedule-table {
+        width: 100%;
+        border-collapse: collapse;
         margin-top: 20px;
+      }
+      .schedule-table th,
+      .schedule-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+      .schedule-table th {
+        background-color: #f2f2f2;
+      }
+      .controls {
+        margin: 15px 0;
+      }
+      .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+        border-radius: 5px 5px 0 0;
+      }
+      .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        color: black;
+      }
+      .tab button:hover {
+        background-color: #ddd;
+      }
+      .tab button.active {
+        background-color: #4caf50;
+        color: white;
+      }
+      .tabcontent {
+        display: none;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+        background-color: white;
+      }
+      .visible {
+        display: block;
+      }
+      /* 日历样式 */
+      .calendar {
+        width: 100%;
+        margin: 20px auto;
+      }
+      .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .calendar-title {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+      .calendar-nav {
+        display: flex;
+        gap: 10px;
+      }
+      .calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      .calendar-weekdays div {
+        padding: 10px;
+        text-align: center;
+      }
+      .calendar-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+      }
+      .calendar-day {
+        min-height: 60px;
+        padding: 5px;
+        border: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .other-month {
+        color: #999;
+        background-color: #f0f0f0;
+        opacity: 0.6;
+      }
+      .selected-day {
+        border: 2px solid yellow !important;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        transform: scale(1.05);
+        z-index: 1;
+      }
+      .today {
+        font-weight: bolder;
+        font-size: xx-large;
+        font-style: italic;
+      }
+      /* .today.selected-day {
+        border: 2px solid gold !important;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        transform: scale(1.05);
+        z-index: 1;
+      } */
+      .day-number {
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+      .jump-to-date {
+        display: flex;
+        justify-content: center;
+        margin: 15px 0;
+        gap: 10px;
+        align-items: center;
+      }
+      .shift-legend {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 15px 0;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+      #selected-day-info {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        font-size: 1.2em;
       }
     </style>
   </head>
@@ -75,39 +225,118 @@
     <div class="container">
       <h1>做二休二排班计算器</h1>
 
-      <div class="settings">
-        <h3>基准设置</h3>
-        <p>
-          已知 <span id="baseDateDisplay">2025-05-27</span> 是
-          <span id="baseDayTypeDisplay">白班</span>
-        </p>
-        <div>
-          <label for="newBaseDate">修改基准日期:</label>
-          <input type="date" id="newBaseDate" />
-        </div>
-        <div>
-          <label for="newBaseDayType">当天班次:</label>
-          <select id="newBaseDayType">
-            <option value="白班">白班</option>
-            <option value="晚班">晚班</option>
-          </select>
-        </div>
-        <div class="update">
-          <button onclick="updateBaseSettings()">更新基准</button>
+      <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'calendar')">
+          排班日历
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'multiDay')">
+          多日排班表
+        </button>
+        <button class="tablinks" onclick="openTab(event, 'settings')">
+          设置
+        </button>
+      </div>
+
+      <!-- 排班日历标签页 -->
+      <div id="calendar" class="tabcontent visible">
+        <div class="calendar">
+          <div class="calendar-header">
+            <button onclick="prevMonth()">上个月</button>
+            <div class="calendar-title" id="calendar-month-year"></div>
+            <button onclick="nextMonth()">下个月</button>
+          </div>
+
+          <div class="jump-to-date">
+            <span>跳转到:</span>
+            <input type="date" id="jumpToDate" onchange="jumpToDate()" />
+            <button onclick="jumpToday()">今日</button>
+          </div>
+
+          <div class="shift-legend">
+            <div class="legend-item">
+              <div class="legend-color day-white"></div>
+              <span>白班</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color day-night"></div>
+              <span>晚班</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color day-off"></div>
+              <span>休息</span>
+            </div>
+          </div>
+
+          <div class="calendar-weekdays">
+            <div>日</div>
+            <div>一</div>
+            <div>二</div>
+            <div>三</div>
+            <div>四</div>
+            <div>五</div>
+            <div>六</div>
+          </div>
+
+          <div class="calendar-days" id="calendar-days"></div>
+
+          <div id="selected-day-info" class="result"></div>
         </div>
       </div>
 
-      <h3>查询日期</h3>
-      <input type="date" id="queryDate" />
-      <button onclick="calculate()">查询班次</button>
+      <!-- 多日排班表标签页 -->
+      <div id="multiDay" class="tabcontent">
+        <h3>未来多日排班表</h3>
+        <div class="controls">
+          <label for="startDate">开始日期:</label>
+          <input type="date" id="startDate" />
 
-      <div id="result" class="result"></div>
+          <label for="daysToShow">显示天数:</label>
+          <select id="daysToShow">
+            <option value="7">7天</option>
+            <option value="14" selected>14天</option>
+            <option value="21">21天</option>
+            <option value="28">28天</option>
+            <option value="30">30天</option>
+          </select>
+
+          <button onclick="generateSchedule()">生成排班表</button>
+          <button onclick="printSchedule()">打印排班表</button>
+        </div>
+
+        <div id="scheduleResult"></div>
+      </div>
+
+      <!-- 设置标签页 -->
+      <div id="settings" class="tabcontent">
+        <div class="settings">
+          <h3>基准设置</h3>
+          <p>
+            当前基准: <span id="baseDateDisplay">2025-05-28</span> 是
+            <span id="baseDayTypeDisplay">晚班</span>
+          </p>
+          <div>
+            <label for="newBaseDate">修改基准日期:</label>
+            <input type="date" id="newBaseDate" />
+          </div>
+          <div>
+            <label for="newBaseDayType">当天班次:</label>
+            <select id="newBaseDayType">
+              <option value="白班">白班</option>
+              <option value="晚班" selected>晚班</option>
+            </select>
+          </div>
+          <button onclick="updateBaseSettings()">更新基准</button>
+        </div>
+      </div>
     </div>
 
     <script>
       // 基准日期和班次(存储在localStorage中)
       let baseDate = new Date('2025-05-28');
       let baseDayType = '晚班';
+      let currentMonth = new Date().getMonth();
+      let currentYear = new Date().getFullYear();
+      let selectedDate = new Date(); // 当前选中的日期
 
       // 初始化时从localStorage加载设置
       function loadSettings() {
@@ -125,6 +354,191 @@
         }
 
         updateBaseDisplay();
+
+        // 设置默认查询日期为今天
+        const today = new Date();
+        document.getElementById('startDate').valueAsDate = today;
+        document.getElementById('newBaseDate').valueAsDate = today;
+        document.getElementById('jumpToDate').valueAsDate = today;
+
+        // 初始化日历
+        renderCalendar(currentMonth, currentYear);
+      }
+
+      // 渲染日历
+      function renderCalendar(month, year) {
+        const calendarDays = document.getElementById('calendar-days');
+        const monthYearDisplay = document.getElementById('calendar-month-year');
+
+        // 清空日历
+        calendarDays.innerHTML = '';
+
+        // 设置月份和年份显示
+        const monthNames = [
+          '一月',
+          '二月',
+          '三月',
+          '四月',
+          '五月',
+          '六月',
+          '七月',
+          '八月',
+          '九月',
+          '十月',
+          '十一月',
+          '十二月',
+        ];
+        monthYearDisplay.textContent = `${year}年 ${monthNames[month]}`;
+
+        // 获取当月第一天和最后一天
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+
+        // 获取第一天是星期几(0-6)
+        const firstDayIndex = firstDay.getDay();
+
+        // 获取上个月最后几天
+        const prevLastDay = new Date(year, month, 0).getDate();
+
+        // 获取下个月前几天
+        const nextDays = 7 - lastDay.getDay() - 1;
+
+        // 今天的日期
+        const today = new Date();
+        const isCurrentMonth =
+          today.getMonth() === month && today.getFullYear() === year;
+
+        // 创建日历格子
+        let days = '';
+
+        // 上个月的日期
+        for (let i = firstDayIndex; i > 0; i--) {
+          const day = prevLastDay - i + 1;
+          const date = new Date(year, month - 1, day);
+          const dayType = calculateDayType(date);
+          const isSelected = isSameDate(date, selectedDate);
+
+          days += `<div class="calendar-day other-month day-${getDayTypeClass(
+            dayType,
+          )}" 
+                    onclick="selectDate(${day}, ${month - 1}, ${year})">
+                    <div class="day-number">${day}</div>
+                </div>`;
+        }
+
+        // 当月的日期
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+          const date = new Date(year, month, i);
+          const dayType = calculateDayType(date);
+          const isToday = isCurrentMonth && i === today.getDate();
+          const isSelected = isSameDate(date, selectedDate);
+
+          let dayClass = `calendar-day day-${getDayTypeClass(dayType)}`;
+          if (isToday) dayClass += ' today';
+          if (isSelected) dayClass += ' selected-day';
+
+          days += `<div class="${dayClass}" 
+                    onclick="selectDate(${i}, ${month}, ${year})">
+                    <div class="day-number">${i}</div>
+                </div>`;
+        }
+
+        // 下个月的日期
+        for (let i = 1; i <= nextDays; i++) {
+          const date = new Date(year, month + 1, i);
+          const dayType = calculateDayType(date);
+          const isSelected = isSameDate(date, selectedDate);
+
+          days += `<div class="calendar-day other-month day-${getDayTypeClass(
+            dayType,
+          )}" 
+                    onclick="selectDate(${i}, ${month + 1}, ${year})">
+                    <div class="day-number">${i}</div>
+                </div>`;
+        }
+
+        calendarDays.innerHTML = days;
+
+        // 更新选中日期信息
+        updateSelectedDayInfo();
+      }
+
+      // 选择日期
+      function selectDate(day, month, year) {
+        selectedDate = new Date(year, month, day);
+        currentMonth = month;
+        currentYear = year;
+
+        renderCalendar(month, year);
+
+        let tmpDate = new Date(year, month, day);
+        tmpDate.setDate(tmpDate.getDate() + 1);
+        document.getElementById('jumpToDate').valueAsDate = tmpDate; // bug ?
+      }
+
+      // 比较两个日期是否相同（忽略时间）
+      function isSameDate(date1, date2) {
+        return (
+          date1.getFullYear() === date2.getFullYear() &&
+          date1.getMonth() === date2.getMonth() &&
+          date1.getDate() === date2.getDate()
+        );
+      }
+
+      // 更新选中日期的信息
+      function updateSelectedDayInfo() {
+        const dayType = calculateDayType(selectedDate);
+        const dayOfWeek = getDayOfWeek(selectedDate.getDay());
+
+        document.getElementById('selected-day-info').innerHTML = `
+                <div class="day-${getDayTypeClass(dayType)}">
+                    ${formatDate(selectedDate)} ${dayOfWeek} - ${dayType}
+                </div>
+            `;
+      }
+
+      // 上个月
+      function prevMonth() {
+        currentMonth--;
+        if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+        }
+        renderCalendar(currentMonth, currentYear);
+      }
+
+      // 下个月
+      function nextMonth() {
+        currentMonth++;
+        if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+        }
+        renderCalendar(currentMonth, currentYear);
+      }
+
+      // 跳转到指定日期
+      function jumpToDate() {
+        const jumpInput = document.getElementById('jumpToDate').value;
+        if (!jumpInput) return;
+
+        const date = new Date(jumpInput);
+        selectDate(date.getDate(), date.getMonth(), date.getFullYear());
+
+        // // 如果需要切换到不同的月份
+        // if (
+        //   date.getMonth() !== currentMonth ||
+        //   date.getFullYear() !== currentYear
+        // ) {
+        //   currentMonth = date.getMonth();
+        //   currentYear = date.getFullYear();
+        //   renderCalendar(currentMonth, currentYear);
+        // }
+      }
+
+      function jumpToday() {
+        const today = new Date();
+        selectDate(today.getDate(), today.getMonth(), today.getFullYear());
       }
 
       // 更新基准显示
@@ -148,28 +562,100 @@
           localStorage.setItem('baseDayType', baseDayType);
 
           updateBaseDisplay();
+          renderCalendar(currentMonth, currentYear); // 重新渲染日历
           alert('基准设置已更新！');
         } else {
           alert('请选择基准日期');
         }
       }
 
-      // 计算班次
-      function calculate() {
-        const queryDateInput = document.getElementById('queryDate');
-        const resultDiv = document.getElementById('result');
+      // 生成多日排班表
+      function generateSchedule() {
+        const startDateInput = document.getElementById('startDate');
+        const daysToShow = parseInt(
+          document.getElementById('daysToShow').value,
+        );
+        const scheduleResult = document.getElementById('scheduleResult');
 
-        if (!queryDateInput.value) {
-          resultDiv.textContent = '请选择查询日期';
-          resultDiv.className = 'result';
+        if (!startDateInput.value) {
+          scheduleResult.innerHTML = '<p>请选择开始日期</p>';
           return;
         }
 
-        const targetDate = new Date(queryDateInput.value);
-        const dayType = calculateDayType(targetDate);
+        let startDate = new Date(startDateInput.value);
+        let tableHTML = `
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>星期</th>
+                            <th>班次</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
 
-        resultDiv.textContent = `${formatDate(targetDate)} 是 ${dayType}`;
-        resultDiv.className = `result day-${getDayTypeClass(dayType)}`;
+        for (let i = 0; i < daysToShow; i++) {
+          const currentDate = new Date(startDate);
+          currentDate.setDate(startDate.getDate() + i);
+          const dayType = calculateDayType(currentDate);
+          const dayOfWeek = getDayOfWeek(currentDate.getDay());
+
+          tableHTML += `
+                    <tr class="day-${getDayTypeClass(dayType)}">
+                        <td>${formatDate(currentDate)}</td>
+                        <td>${dayOfWeek}</td>
+                        <td>${dayType}</td>
+                    </tr>
+                `;
+        }
+
+        tableHTML += `
+                    </tbody>
+                </table>
+                <p>排班表生成时间: ${new Date().toLocaleString()}</p>
+            `;
+
+        scheduleResult.innerHTML = tableHTML;
+      }
+
+      // 打印排班表
+      function printSchedule() {
+        const scheduleResult =
+          document.getElementById('scheduleResult').innerHTML;
+        if (!scheduleResult) {
+          alert('请先生成排班表');
+          return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>做二休二排班表</title>
+                    <style>
+                        body { font-family: Arial; margin: 20px; }
+                        h1 { color: #333; text-align: center; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+                        th { background-color: #f2f2f2; }
+                        .day-white { background-color: #87CEFA; color: black; }
+                        .day-night { background-color: #282846; color: white; }
+                        .day-off { background-color: #90EE90; color: black; }
+                        .print-info { margin-top: 20px; font-size: 12px; text-align: right; }
+                    </style>
+                </head>
+                <body>
+                    <h1>做二休二排班表</h1>
+                    <p>基准日期: ${formatDate(baseDate)} (${baseDayType})</p>
+                    ${scheduleResult}
+                    <div class="print-info">生成自: 做二休二排班计算器</div>
+                </body>
+                </html>
+            `);
+        printWindow.document.close();
+        printWindow.print();
       }
 
       // 计算班次的核心算法
@@ -220,6 +706,12 @@
         return `${year}-${month}-${day}`;
       }
 
+      // 获取星期几
+      function getDayOfWeek(dayIndex) {
+        const days = ['日', '一', '二', '三', '四', '五', '六'];
+        return `星期${days[dayIndex]}`;
+      }
+
       // 获取班次对应的CSS类名
       function getDayTypeClass(dayType) {
         switch (dayType) {
@@ -234,14 +726,27 @@
         }
       }
 
+      // 标签页切换功能
+      function openTab(evt, tabName) {
+        const tabcontent = document.getElementsByClassName('tabcontent');
+        for (let i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].classList.remove('visible');
+        }
+
+        const tablinks = document.getElementsByClassName('tablinks');
+        for (let i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(' active', '');
+        }
+
+        document.getElementById(tabName).classList.add('visible');
+        evt.currentTarget.className += ' active';
+      }
+
       // 页面加载时初始化
       window.onload = function () {
-        // 设置今天为默认查询日期
-        document.getElementById('queryDate').valueAsDate = new Date();
-        // 设置基准日期输入框的默认值为今天
-        document.getElementById('newBaseDate').valueAsDate = new Date();
-        // 加载设置
         loadSettings();
+        // 默认生成14天的排班表
+        generateSchedule();
       };
     </script>
   </body>
